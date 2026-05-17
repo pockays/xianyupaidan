@@ -1,0 +1,36 @@
+# Java / Maven
+backend/target/
+backend/.mvn/wrapper/
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+
+# Node / Vue
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
