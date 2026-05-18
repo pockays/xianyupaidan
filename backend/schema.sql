@@ -91,6 +91,27 @@ CREATE TABLE IF NOT EXISTS system_config (
     announcement TEXT
 ) ENGINE=InnoDB;
 
+-- 审计日志 (CDC audit log populated by Canal + Kafka consumer)
+CREATE TABLE IF NOT EXISTS audit_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    table_name VARCHAR(64) NOT NULL,
+    operation_type VARCHAR(16) NOT NULL,
+    record_id VARCHAR(64),
+    old_data JSON,
+    new_data JSON,
+    operator VARCHAR(64),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_table_name (table_name),
+    INDEX idx_operation_type (operation_type),
+    INDEX idx_created_at (created_at),
+    INDEX idx_record_id (record_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Canal CDC 用户
+CREATE USER IF NOT EXISTS 'canal'@'%' IDENTIFIED BY 'canal';
+GRANT SELECT, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'canal'@'%';
+FLUSH PRIVILEGES;
+
 -- 初始化超级管理员 (密码: admin123)
 INSERT INTO super_admin (username, password_hash) VALUES
 ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5Eh')

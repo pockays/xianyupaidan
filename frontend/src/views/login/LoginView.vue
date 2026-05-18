@@ -41,6 +41,10 @@
               <span v-if="loading" class="spinner"></span>
               <span v-else>登录</span>
             </button>
+            <label class="remember-row">
+              <input type="checkbox" v-model="remember" />
+              <span>记住本次输入</span>
+            </label>
           </div>
 
           <div v-else key="admin" class="login-form">
@@ -62,6 +66,10 @@
               <span v-if="loading" class="spinner"></span>
               <span v-else>登录</span>
             </button>
+            <label class="remember-row">
+              <input type="checkbox" v-model="remember" />
+              <span>记住用户名</span>
+            </label>
           </div>
         </transition>
       </div>
@@ -70,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { xianyuLogin, adminLogin } from '../../api/auth'
@@ -79,17 +87,52 @@ import { useAuthStore } from '../../stores/auth'
 const router = useRouter()
 const auth = useAuthStore()
 
+const LS_MODE = 'login_mode'
+const LS_USERNAME = 'login_username'
+const LS_XIANYU_ID = 'login_xianyuId'
+const LS_SELLER_ID = 'login_sellerId'
+const LS_REMEMBER = 'login_remember'
+
 const mode = ref<'xianyu' | 'admin'>('xianyu')
 const loading = ref(false)
 const showPwd = ref(false)
+const remember = ref(true)
 const xianyuForm = ref({ xianyuId: '', sellerId: '' })
 const adminForm = ref({ username: '', password: '' })
+
+onMounted(() => {
+  const saved = localStorage.getItem(LS_MODE)
+  if (saved === 'xianyu' || saved === 'admin') mode.value = saved
+  remember.value = localStorage.getItem(LS_REMEMBER) !== '0'
+  if (remember.value) {
+    const uname = localStorage.getItem(LS_USERNAME)
+    if (uname) adminForm.value.username = uname
+    const xid = localStorage.getItem(LS_XIANYU_ID)
+    if (xid) xianyuForm.value.xianyuId = xid
+    const sid = localStorage.getItem(LS_SELLER_ID)
+    if (sid) xianyuForm.value.sellerId = sid
+  }
+})
+
+watch(mode, (v) => localStorage.setItem(LS_MODE, v))
+watch(remember, (v) => {
+  localStorage.setItem(LS_REMEMBER, v ? '1' : '0')
+  if (!v) {
+    localStorage.removeItem(LS_USERNAME)
+    localStorage.removeItem(LS_XIANYU_ID)
+    localStorage.removeItem(LS_SELLER_ID)
+  }
+})
 
 async function handleXianyuLogin() {
   if (!xianyuForm.value.xianyuId || !xianyuForm.value.sellerId) { ElMessage.warning('请填写闲鱼ID和卖家ID'); return }
   loading.value = true
   try {
     const res = await xianyuLogin(xianyuForm.value)
+    if (remember.value) {
+      localStorage.setItem(LS_XIANYU_ID, xianyuForm.value.xianyuId)
+      localStorage.setItem(LS_SELLER_ID, xianyuForm.value.sellerId)
+    }
     auth.setAuth(res.token, res.role, res.nickname, res.tenantId)
     router.push('/user/home')
   } finally { loading.value = false }
@@ -100,6 +143,9 @@ async function handleAdminLogin() {
   loading.value = true
   try {
     const res = await adminLogin(adminForm.value)
+    if (remember.value) {
+      localStorage.setItem(LS_USERNAME, adminForm.value.username)
+    }
     auth.setAuth(res.token, res.role, res.nickname, res.tenantId)
     router.push(res.role === 'SUPER_ADMIN' ? '/super/manage' : '/admin/home')
   } finally { loading.value = false }
@@ -172,6 +218,9 @@ async function handleAdminLogin() {
 }
 .btn-primary:hover { background: var(--color-primary-dark); box-shadow: var(--shadow-md); }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.remember-row { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-text-muted); cursor: pointer; justify-content: center; }
+.remember-row input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--color-primary); cursor: pointer; }
 
 .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #FFF; border-radius: 50%; animation: spin 0.6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
