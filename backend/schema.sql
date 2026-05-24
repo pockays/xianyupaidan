@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS admin (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     tenant_id VARCHAR(32) NOT NULL UNIQUE,
     username VARCHAR(50) NOT NULL UNIQUE,
+    xianyu_id VARCHAR(100),
     password_hash VARCHAR(255) NOT NULL,
     email VARCHAR(100),
     status TINYINT DEFAULT 1,
@@ -112,14 +113,14 @@ CREATE USER IF NOT EXISTS 'canal'@'%' IDENTIFIED BY 'canal';
 GRANT SELECT, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'canal'@'%';
 FLUSH PRIVILEGES;
 
--- 初始化超级管理员 (密码: admin123)
+-- 初始化超级管理员 (密码: 134511130qq)
 INSERT INTO super_admin (username, password_hash) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5Eh')
+('admin', '$2b$10$72kuQTuQVv3dxtmTuoMfYOx0iNhXesXIX6xIbjMkqKFyIMCJxzd7W')
 ON DUPLICATE KEY UPDATE username = username;
 
--- 初始化默认管理员 (密码: admin123)
+-- 初始化默认管理员 (密码: 134511130qq)
 INSERT INTO admin (tenant_id, username, password_hash, email, status) VALUES
-('default', 'manager', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5Eh', 'manager@qq.com', 1)
+('default', '咩卡布', '$2b$10$72kuQTuQVv3dxtmTuoMfYOx0iNhXesXIX6xIbjMkqKFyIMCJxzd7W', 'manager@qq.com', 1)
 ON DUPLICATE KEY UPDATE username = username;
 
 -- 初始化默认标签

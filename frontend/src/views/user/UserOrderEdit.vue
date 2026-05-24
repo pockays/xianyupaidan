@@ -89,6 +89,10 @@
 
       <!-- Actions -->
       <div v-if="!isReadOnly" class="editor-footer">
+        <button v-if="order?.status === 'WAITING'" class="btn-danger" :disabled="saving || submitting" @click="handleDelete">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          删除排单
+        </button>
         <button class="btn-secondary" :disabled="saving" @click="handleSave">
           <span v-if="saving" class="spinner"></span>
           <span v-else>保存</span>
@@ -104,14 +108,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { getUserOrderDetail, updateUserOrder, submitOrder, type OrderDetail, type CategoryDetail, type CreateOrderData } from '../../api/user'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getUserOrderDetail, updateUserOrder, submitOrder, deleteUserOrder, type OrderDetail, type CategoryDetail, type CreateOrderData } from '../../api/user'
 import request from '../../api/request'
 import type { PresetTag } from '../../api/admin'
 import { statusMap } from '../../utils'
 
 const route = useRoute()
+const router = useRouter()
 const orderId = Number(route.params.id)
 
 const order = ref<OrderDetail | null>(null)
@@ -163,9 +168,11 @@ function autoResize(e: Event) {
 }
 
 function buildRequest(): CreateOrderData {
+  // CURRENT: only send newly added categories to avoid duplication
+  const cats = isCurrent.value ? newCategories.value : [...existingCategories.value, ...newCategories.value]
   return {
     email: order.value?.email || '',
-    categories: [...existingCategories.value, ...newCategories.value]
+    categories: cats
       .filter(c => c.items.some(i => i.linkUrl || i.note))
       .map(c => ({
         categoryName: c.categoryName,
@@ -176,11 +183,37 @@ function buildRequest(): CreateOrderData {
 
 async function handleSave() {
   saving.value = true
-  try { await updateUserOrder(orderId, buildRequest()); ElMessage.success('保存成功') } finally { saving.value = false }
+  try {
+    await updateUserOrder(orderId, buildRequest())
+    ElMessage.success('保存成功')
+    const data = await getUserOrderDetail(orderId)
+    order.value = data
+    existingCategories.value = (data.categories || []).map(c => ({ ...c, _key: 'cat_' + c.id + '_' + Date.now() }))
+    newCategories.value = []
+    customTag.value = ''
+  } finally { saving.value = false }
 }
 async function handleSubmit() {
   submitting.value = true
-  try { await updateUserOrder(orderId, buildRequest()); await submitOrder(orderId); ElMessage.success('提交成功'); order.value!.status = 'CURRENT' } finally { submitting.value = false }
+  try {
+    const req = buildRequest()
+    if (!req.categories.length) {
+      ElMessage.warning('排单不能为空，请至少添加一个分类和链接')
+      return
+    }
+    await updateUserOrder(orderId, req)
+    await submitOrder(orderId)
+    ElMessage.success('提交成功')
+    router.push('/user/home')
+  } finally { submitting.value = false }
+}
+async function handleDelete() {
+  try {
+    await ElMessageBox.confirm('确定删除该排单吗？', '确认删除', { type: 'warning' })
+    await deleteUserOrder(orderId)
+    ElMessage.success('已删除')
+    router.push('/user/orders')
+  } catch { /* cancelled */ }
 }
 </script>
 

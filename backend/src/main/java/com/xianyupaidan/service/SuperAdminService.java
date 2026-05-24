@@ -36,6 +36,7 @@ public class SuperAdminService {
         Admin admin = new Admin();
         admin.setTenantId(UUID.randomUUID().toString().replace("-", ""));
         admin.setUsername(request.getUsername());
+        admin.setXianyuId(request.getXianyuId());
         admin.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         admin.setEmail(request.getEmail());
         admin.setStatus(1);
@@ -65,6 +66,9 @@ public class SuperAdminService {
         }
         if (request.getEmail() != null) {
             admin.setEmail(request.getEmail());
+        }
+        if (request.getXianyuId() != null) {
+            admin.setXianyuId(request.getXianyuId());
         }
         adminMapper.updateById(admin);
     }

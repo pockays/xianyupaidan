@@ -19,6 +19,7 @@ const router = createRouter({
       children: [
         { path: 'home', name: 'UserHome', component: () => import('../views/user/UserHome.vue') },
         { path: 'orders', name: 'UserOrderList', component: () => import('../views/user/UserOrderList.vue') },
+        { path: 'order/new', name: 'UserOrderCreate', component: () => import('../views/user/UserOrderCreate.vue') },
         { path: 'order/:id', name: 'UserOrderEdit', component: () => import('../views/user/UserOrderEdit.vue'), props: true },
       ],
     },

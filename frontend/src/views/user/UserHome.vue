@@ -21,8 +21,8 @@
         <div class="stat-value">{{ homeData.currentOrders }}</div>
         <div class="stat-label">当前排单</div>
       </div>
-      <div class="bento-card stat-action" :class="{ disabled: !homeData.orderEnabled }">
-        <button class="action-btn-main" :disabled="!homeData.orderEnabled" @click="handlePlaceOrder">
+      <div class="bento-card stat-action" :class="{ disabled: !homeData.orderEnabled }" @click="handlePlaceOrder">
+        <button class="action-btn-main" :disabled="!homeData.orderEnabled">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           点击排单
         </button>
@@ -55,48 +55,21 @@
       </div>
     </div>
 
-    <transition name="fade">
-      <div v-if="confirmVisible" class="overlay">
-        <div class="dialog">
-          <h4>确认排单</h4>
-          <p>确定要提交排单申请吗？</p>
-          <div class="dialog-actions">
-            <button class="btn-cancel" @click="confirmVisible = false">取消</button>
-            <button class="btn-confirm" :disabled="placing" @click="confirmPlaceOrder">
-              <span v-if="placing" class="spinner"></span>
-              <span v-else>确定</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </transition>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { getUserHome, createOrder, type UserHomeData } from '../../api/user'
+import { getUserHome, type UserHomeData } from '../../api/user'
 import { maskName, statusMap } from '../../utils'
 
 const router = useRouter()
 const homeData = ref<UserHomeData>({ orderEnabled: true, announcement: '', totalOrders: 0, waitingOrders: 0, currentOrders: 0, recentOrders: [] })
-const confirmVisible = ref(false)
-const placing = ref(false)
 
 onMounted(async () => { homeData.value = await getUserHome() })
 
-function handlePlaceOrder() { confirmVisible.value = true }
-async function confirmPlaceOrder() {
-  placing.value = true
-  try {
-    const orderId = await createOrder({ categories: [] })
-    ElMessage.success('排单成功！')
-    confirmVisible.value = false
-    router.push(`/user/order/${orderId}`)
-  } finally { placing.value = false }
-}
+function handlePlaceOrder() { router.push('/user/order/new') }
 </script>
 
 <style scoped>

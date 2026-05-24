@@ -50,4 +50,10 @@ public class UserController {
         orderService.submitOrder(id);
         return Result.ok();
     }
+
+    @DeleteMapping("/orders/{id}")
+    public Result<?> deleteOrder(@PathVariable Long id) {
+        orderService.deleteUserOrder(id);
+        return Result.ok();
+    }
 }

@@ -17,7 +17,7 @@
 
       <div class="mode-tabs">
         <button class="mode-tab" :class="{ active: mode === 'xianyu' }" @click="mode = 'xianyu'">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 3v18"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           闲鱼登录
         </button>
         <button class="mode-tab" :class="{ active: mode === 'admin' }" @click="mode = 'admin'">
@@ -30,8 +30,8 @@
         <transition name="card-swap" mode="out-in">
           <div v-if="mode === 'xianyu'" key="xianyu" class="login-form">
             <div class="form-group">
-              <label class="form-label">闲鱼ID</label>
-              <input type="text" class="form-input" v-model="xianyuForm.xianyuId" placeholder="输入您的闲鱼ID" />
+              <label class="form-label">闲鱼昵称</label>
+              <input type="text" class="form-input" v-model="xianyuForm.xianyuId" placeholder="输入您的闲鱼昵称" />
             </div>
             <div class="form-group">
               <label class="form-label">卖家ID</label>
@@ -55,7 +55,7 @@
             <div class="form-group">
               <label class="form-label">密码</label>
               <div class="input-wrap">
-                <input :type="showPwd ? 'text' : 'password'" class="form-input" v-model="adminForm.password" placeholder="输入密码" />
+                <input :type="showPwd ? 'text' : 'password'" class="form-input" v-model="adminForm.password" placeholder="输入密码" @keyup.enter="handleAdminLogin" />
                 <button class="input-suffix" @click="showPwd = !showPwd">
                   <svg v-if="showPwd" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
                   <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -68,7 +68,7 @@
             </button>
             <label class="remember-row">
               <input type="checkbox" v-model="remember" />
-              <span>记住用户名</span>
+              <span>记住本次输入</span>
             </label>
           </div>
         </transition>
@@ -87,12 +87,6 @@ import { useAuthStore } from '../../stores/auth'
 const router = useRouter()
 const auth = useAuthStore()
 
-const LS_MODE = 'login_mode'
-const LS_USERNAME = 'login_username'
-const LS_XIANYU_ID = 'login_xianyuId'
-const LS_SELLER_ID = 'login_sellerId'
-const LS_REMEMBER = 'login_remember'
-
 const mode = ref<'xianyu' | 'admin'>('xianyu')
 const loading = ref(false)
 const showPwd = ref(false)
@@ -101,37 +95,43 @@ const xianyuForm = ref({ xianyuId: '', sellerId: '' })
 const adminForm = ref({ username: '', password: '' })
 
 onMounted(() => {
-  const saved = localStorage.getItem(LS_MODE)
+  const saved = localStorage.getItem('login_mode')
   if (saved === 'xianyu' || saved === 'admin') mode.value = saved
-  remember.value = localStorage.getItem(LS_REMEMBER) !== '0'
+  remember.value = localStorage.getItem('login_remember') !== '0'
   if (remember.value) {
-    const uname = localStorage.getItem(LS_USERNAME)
-    if (uname) adminForm.value.username = uname
-    const xid = localStorage.getItem(LS_XIANYU_ID)
+    const xid = localStorage.getItem('login_xianyuId')
     if (xid) xianyuForm.value.xianyuId = xid
-    const sid = localStorage.getItem(LS_SELLER_ID)
+    const sid = localStorage.getItem('login_sellerId')
     if (sid) xianyuForm.value.sellerId = sid
+    const uname = localStorage.getItem('login_username')
+    if (uname) adminForm.value.username = uname
+    const pwd = localStorage.getItem('login_password')
+    if (pwd) adminForm.value.password = pwd
   }
 })
 
-watch(mode, (v) => localStorage.setItem(LS_MODE, v))
+watch(mode, (v) => localStorage.setItem('login_mode', v))
 watch(remember, (v) => {
-  localStorage.setItem(LS_REMEMBER, v ? '1' : '0')
+  localStorage.setItem('login_remember', v ? '1' : '0')
   if (!v) {
-    localStorage.removeItem(LS_USERNAME)
-    localStorage.removeItem(LS_XIANYU_ID)
-    localStorage.removeItem(LS_SELLER_ID)
+    localStorage.removeItem('login_xianyuId')
+    localStorage.removeItem('login_sellerId')
+    localStorage.removeItem('login_username')
+    localStorage.removeItem('login_password')
   }
 })
 
 async function handleXianyuLogin() {
-  if (!xianyuForm.value.xianyuId || !xianyuForm.value.sellerId) { ElMessage.warning('请填写闲鱼ID和卖家ID'); return }
+  if (!xianyuForm.value.xianyuId || !xianyuForm.value.sellerId) {
+    ElMessage.warning('请填写闲鱼昵称和卖家ID')
+    return
+  }
   loading.value = true
   try {
     const res = await xianyuLogin(xianyuForm.value)
     if (remember.value) {
-      localStorage.setItem(LS_XIANYU_ID, xianyuForm.value.xianyuId)
-      localStorage.setItem(LS_SELLER_ID, xianyuForm.value.sellerId)
+      localStorage.setItem('login_xianyuId', xianyuForm.value.xianyuId)
+      localStorage.setItem('login_sellerId', xianyuForm.value.sellerId)
     }
     auth.setAuth(res.token, res.role, res.nickname, res.tenantId)
     router.push('/user/home')
@@ -139,12 +139,16 @@ async function handleXianyuLogin() {
 }
 
 async function handleAdminLogin() {
-  if (!adminForm.value.username || !adminForm.value.password) { ElMessage.warning('请填写用户名和密码'); return }
+  if (!adminForm.value.username || !adminForm.value.password) {
+    ElMessage.warning('请填写用户名和密码')
+    return
+  }
   loading.value = true
   try {
     const res = await adminLogin(adminForm.value)
     if (remember.value) {
-      localStorage.setItem(LS_USERNAME, adminForm.value.username)
+      localStorage.setItem('login_username', adminForm.value.username)
+      localStorage.setItem('login_password', adminForm.value.password)
     }
     auth.setAuth(res.token, res.role, res.nickname, res.tenantId)
     router.push(res.role === 'SUPER_ADMIN' ? '/super/manage' : '/admin/home')
@@ -218,9 +222,6 @@ async function handleAdminLogin() {
 }
 .btn-primary:hover { background: var(--color-primary-dark); box-shadow: var(--shadow-md); }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.remember-row { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-text-muted); cursor: pointer; justify-content: center; }
-.remember-row input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--color-primary); cursor: pointer; }
 
 .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #FFF; border-radius: 50%; animation: spin 0.6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

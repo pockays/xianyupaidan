@@ -5,7 +5,6 @@ import com.xianyupaidan.dto.LoginRequest;
 import com.xianyupaidan.dto.LoginResponse;
 import com.xianyupaidan.dto.XianyuLoginRequest;
 import com.xianyupaidan.security.JwtTokenProvider;
-import com.xianyupaidan.security.TenantContext;
 import com.xianyupaidan.service.AuthService;
 import io.jsonwebtoken.Claims;
 import jakarta.validation.Valid;

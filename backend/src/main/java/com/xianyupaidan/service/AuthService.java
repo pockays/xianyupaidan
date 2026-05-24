@@ -22,7 +22,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 
     public LoginResponse xianyuLogin(XianyuLoginRequest request) {
-        // Find admin by username (sellerId)
         Admin admin = adminMapper.selectOne(new LambdaQueryWrapper<Admin>()
                 .eq(Admin::getUsername, request.getSellerId()));
         if (admin == null) {
@@ -33,7 +32,6 @@ public class AuthService {
         }
         String tenantId = admin.getTenantId();
 
-        // Find or create user under this tenant
         User user = userMapper.selectOne(new LambdaQueryWrapper<User>()
                 .eq(User::getTenantId, tenantId)
                 .eq(User::getXianyuId, request.getXianyuId()));
@@ -49,14 +47,12 @@ public class AuthService {
     }
 
     public LoginResponse adminLogin(LoginRequest request) {
-        // Try super admin first
         SuperAdmin sa = superAdminMapper.selectOne(new LambdaQueryWrapper<SuperAdmin>()
                 .eq(SuperAdmin::getUsername, request.getUsername()));
         if (sa != null && passwordEncoder.matches(request.getPassword(), sa.getPasswordHash())) {
             String token = jwtTokenProvider.createToken(sa.getId(), "SUPER_ADMIN", "");
             return new LoginResponse(token, "SUPER_ADMIN", sa.getUsername(), "");
         }
-        // Try admin
         Admin admin = adminMapper.selectOne(new LambdaQueryWrapper<Admin>()
                 .eq(Admin::getUsername, request.getUsername()));
         if (admin == null) {

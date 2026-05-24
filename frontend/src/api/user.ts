@@ -81,3 +81,7 @@ export function updateUserOrder(id: number, data: CreateOrderData) {
 export function submitOrder(id: number) {
   return request.post(`/user/orders/${id}/submit`)
 }
+
+export function deleteUserOrder(id: number) {
+  return request.delete(`/user/orders/${id}`)
+}

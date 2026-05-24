@@ -288,6 +288,18 @@ public class OrderService {
     }
 
     @Transactional
+    public void deleteUserOrder(Long orderId) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null || !order.getUserId().equals(TenantContext.getUserId())) {
+            throw new IllegalArgumentException("无权操作");
+        }
+        if (!"WAITING".equals(order.getStatus())) {
+            throw new IllegalArgumentException("只能删除等待中的排单");
+        }
+        deleteOrder(orderId);
+    }
+
+    @Transactional
     public void deleteOrder(Long orderId) {
         List<OrderCategory> cats = orderCategoryMapper.selectList(
                 new LambdaQueryWrapper<OrderCategory>().eq(OrderCategory::getOrderId, orderId));

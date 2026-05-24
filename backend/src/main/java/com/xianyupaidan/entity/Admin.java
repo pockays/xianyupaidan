@@ -11,6 +11,7 @@ public class Admin {
     private Long id;
     private String tenantId;
     private String username;
+    private String xianyuId;
     private String passwordHash;
     private String email;
     private Integer status;

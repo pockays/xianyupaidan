@@ -10,4 +10,5 @@ public class CreateAdminRequest {
     @NotBlank(message = "密码不能为空")
     private String password;
     private String email;
+    private String xianyuId;
 }
