@@ -89,7 +89,6 @@
 
       <!-- Actions -->
       <div v-if="!isReadOnly" class="editor-footer">
-        <button v-if="order?.status === 'WAITING'" class="btn-action btn-delete" :disabled="saving || submitting" @click="handleDelete">删除排单</button>
         <button class="btn-secondary" :disabled="saving" @click="handleSave">
           <span v-if="saving" class="spinner"></span>
           <span v-else>保存</span>
@@ -105,15 +104,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserOrderDetail, updateUserOrder, submitOrder, deleteUserOrder, type OrderDetail, type CategoryDetail, type CreateOrderData } from '../../api/user'
+import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { getUserOrderDetail, updateUserOrder, submitOrder, type OrderDetail, type CategoryDetail, type CreateOrderData } from '../../api/user'
 import request from '../../api/request'
 import type { PresetTag } from '../../api/admin'
 import { statusMap } from '../../utils'
 
 const route = useRoute()
-const router = useRouter()
 const orderId = Number(route.params.id)
 
 const order = ref<OrderDetail | null>(null)
@@ -165,11 +163,9 @@ function autoResize(e: Event) {
 }
 
 function buildRequest(): CreateOrderData {
-  // CURRENT: only send newly added categories to avoid duplication
-  const cats = isCurrent.value ? newCategories.value : [...existingCategories.value, ...newCategories.value]
   return {
     email: order.value?.email || '',
-    categories: cats
+    categories: [...existingCategories.value, ...newCategories.value]
       .filter(c => c.items.some(i => i.linkUrl || i.note))
       .map(c => ({
         categoryName: c.categoryName,
@@ -180,37 +176,11 @@ function buildRequest(): CreateOrderData {
 
 async function handleSave() {
   saving.value = true
-  try {
-    await updateUserOrder(orderId, buildRequest())
-    ElMessage.success('保存成功')
-    const data = await getUserOrderDetail(orderId)
-    order.value = data
-    existingCategories.value = (data.categories || []).map(c => ({ ...c, _key: 'cat_' + c.id + '_' + Date.now() }))
-    newCategories.value = []
-    customTag.value = ''
-  } finally { saving.value = false }
+  try { await updateUserOrder(orderId, buildRequest()); ElMessage.success('保存成功') } finally { saving.value = false }
 }
 async function handleSubmit() {
   submitting.value = true
-  try {
-    const req = buildRequest()
-    if (!req.categories.length) {
-      ElMessage.warning('排单不能为空，请至少添加一个分类和链接')
-      return
-    }
-    await updateUserOrder(orderId, req)
-    await submitOrder(orderId)
-    ElMessage.success('提交成功')
-    router.push('/user/home')
-  } finally { submitting.value = false }
-}
-async function handleDelete() {
-  try {
-    await ElMessageBox.confirm('确定删除该排单吗？', '确认删除', { type: 'warning' })
-    await deleteUserOrder(orderId)
-    ElMessage.success('已删除')
-    router.push('/user/orders')
-  } catch { /* cancelled */ }
+  try { await updateUserOrder(orderId, buildRequest()); await submitOrder(orderId); ElMessage.success('提交成功'); order.value!.status = 'CURRENT' } finally { submitting.value = false }
 }
 </script>
 
@@ -275,10 +245,6 @@ async function handleDelete() {
 .btn-secondary { background: var(--color-surface); color: var(--color-text-secondary); border: 1px solid var(--color-border); }
 .btn-secondary:hover { background: var(--color-bg); }
 .btn-primary:disabled, .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-action { padding: 4px 10px; border-radius: var(--radius-sm); font-size: var(--font-size-xs); cursor: pointer; font-family: var(--font-sans); border: none; transition: all var(--transition-fast); }
-.btn-delete { background: var(--color-destructive-bg); color: var(--color-destructive); }
-.btn-delete:hover { background: var(--color-destructive); color: #FFF; }
-.btn-delete:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #FFF; border-radius: 50%; animation: spin 0.6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

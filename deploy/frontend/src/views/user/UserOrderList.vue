@@ -9,8 +9,8 @@
     </div>
 
     <div v-if="orders.length" class="order-list">
-      <div v-for="order in orders" :key="order.id" class="order-card" :class="'card-' + order.status.toLowerCase()">
-        <div class="order-left" @click="$router.push(`/user/order/${order.id}`)">
+      <div v-for="order in orders" :key="order.id" class="order-card" :class="'card-' + order.status.toLowerCase()" @click="$router.push(`/user/order/${order.id}`)">
+        <div class="order-left">
           <span class="order-id">#{{ order.id }}</span>
           <span class="order-status" :class="'s-' + order.status.toLowerCase()">
             <span class="status-dot"></span>
@@ -18,7 +18,6 @@
           </span>
         </div>
         <div class="order-right">
-          <button v-if="order.status === 'WAITING'" class="btn-action btn-delete" @click.stop="handleDelete(order.id)">删除</button>
           <span class="order-time">{{ order.createdAt?.substring(0, 16)?.replace('T', ' ') }}</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
@@ -34,22 +33,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserOrders, deleteUserOrder, type OrderItem } from '../../api/user'
+import { getUserOrders, type OrderItem } from '../../api/user'
 import { statusMap } from '../../utils'
 
 const orders = ref<OrderItem[]>([])
 
 onMounted(async () => { orders.value = await getUserOrders() })
-
-async function handleDelete(id: number) {
-  try {
-    await ElMessageBox.confirm('确定删除该排单吗？', '确认删除', { type: 'warning' })
-    await deleteUserOrder(id)
-    ElMessage.success('已删除')
-    orders.value = orders.value.filter(o => o.id !== id)
-  } catch { /* cancelled */ }
-}
 </script>
 
 <style scoped>
@@ -80,9 +69,6 @@ async function handleDelete(id: number) {
 .status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 .order-right { display: flex; align-items: center; gap: var(--space-2); }
 .order-time { font-size: var(--font-size-xs); color: var(--color-text-muted); }
-.btn-action { padding: 4px 10px; border-radius: var(--radius-sm); font-size: var(--font-size-xs); cursor: pointer; font-family: var(--font-sans); border: none; transition: all var(--transition-fast); }
-.btn-delete { background: var(--color-destructive-bg); color: var(--color-destructive); }
-.btn-delete:hover { background: var(--color-destructive); color: #FFF; }
 
 .empty-state { text-align: center; padding: var(--space-16); color: var(--color-text-muted); }
 .empty-state p { margin-top: var(--space-3); font-size: var(--font-size-sm); }

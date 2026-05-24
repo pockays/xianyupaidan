@@ -1,0 +1,11 @@
+spring:
+  autoconfigure:
+    exclude:
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: xianyupaidan-audit-group
+      auto-offset-reset: earliest
+      enable-auto-commit: true
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

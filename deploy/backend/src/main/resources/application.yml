@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: xianyupaidan
+  datasource:
+    url: jdbc:mysql://localhost:3306/xianyupaidan?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: 1159419473@qq.com
+    password: osyizsjsawjcbabd
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3000ms
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        concurrency: 2
+        max-concurrency: 5
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+jwt:
+  secret: xianyupaidan-secret-key-must-be-at-least-256-bits-long-for-hs256
+  expiration: 86400000
+
+taobao:
+  oauth:
+    app-key: 35382010
+    app-secret: 18d20014be034ca1d340042f044fb8f1
+    redirect-uri: http://47.96.112.211/oauth/callback
+    authorize-url: https://oauth.taobao.com/tac/authorize
+    token-url: https://oauth.taobao.com/token
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.xianyupaidan: debug
