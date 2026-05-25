@@ -197,7 +197,7 @@ async function handleAddItems() {
 .item-check:hover { border-color: var(--color-accent); }
 .item-check.done { background: var(--color-accent); border-color: var(--color-accent); color: #FFF; }
 .item-content { flex: 1; display: flex; gap: var(--space-2); min-width: 0; }
-.item-link { flex: 2; font-size: var(--font-size-sm); color: var(--color-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item-link { flex: 2; font-size: var(--font-size-sm); color: var(--color-primary); word-break: break-all; }
 .item-link.empty { color: var(--color-text-muted); }
 .item-note { flex: 1; font-size: var(--font-size-sm); color: var(--color-text-secondary); word-break: break-all; line-height: 1.4; }
 .item-note.empty { color: var(--color-text-muted); }

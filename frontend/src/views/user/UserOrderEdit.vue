@@ -260,7 +260,7 @@ async function handleDelete() {
 .items-list { padding: var(--space-2) var(--space-4) var(--space-3); }
 .item-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-1) 0; }
 .item-index { width: 22px; text-align: center; font-size: var(--font-size-xs); color: var(--color-text-muted); font-weight: var(--font-weight-medium); }
-.item-inputs { flex: 1; display: flex; gap: var(--space-2); }
+.item-inputs { flex: 1; display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .form-textarea { flex: 1; min-width: 100px; min-height: 32px; padding: 7px 11px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); color: var(--color-foreground); font-size: var(--font-size-sm); font-family: var(--font-sans); outline: none; resize: none; overflow: hidden; line-height: 1.4; field-sizing: content; }
 .form-textarea:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-bg); }
 .form-textarea:disabled { background: #F3F4F6; opacity: 0.6; cursor: not-allowed; }

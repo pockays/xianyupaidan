@@ -9,8 +9,8 @@
     </div>
 
     <div v-if="orders.length" class="order-list">
-      <div v-for="order in orders" :key="order.id" class="order-card" :class="'card-' + order.status.toLowerCase()">
-        <div class="order-left" @click="$router.push(`/user/order/${order.id}`)">
+      <div v-for="order in orders" :key="order.id" class="order-card" :class="'card-' + order.status.toLowerCase()" @click="$router.push(`/user/order/${order.id}`)">
+        <div class="order-left">
           <span class="order-id">#{{ order.id }}</span>
           <span class="order-status" :class="'s-' + order.status.toLowerCase()">
             <span class="status-dot"></span>
