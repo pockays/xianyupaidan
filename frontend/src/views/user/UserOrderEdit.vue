@@ -42,7 +42,7 @@
           <div v-for="(item, itemIdx) in cat.items" :key="itemIdx" class="item-row">
             <span class="item-index">{{ itemIdx + 1 }}</span>
             <div class="item-inputs">
-              <input v-model="item.linkUrl" placeholder="输入链接" :disabled="isReadOnly || isCurrent" class="form-input form-input-sm" />
+              <input v-model="item.linkUrl" placeholder="输入链接" :disabled="isReadOnly || isCurrent" class="form-input form-input-sm" @blur="checkExistingAutoAdd(catIdx, itemIdx)" />
               <textarea v-model="item.note" placeholder="备注" :disabled="isReadOnly || isCurrent" class="form-textarea" rows="1" @input="autoResize($event)" />
             </div>
             <button v-if="!isReadOnly && !isCurrent" class="btn-icon-remove" @click="removeExistingItem(catIdx, itemIdx)" :disabled="cat.items.length <= 1 && itemIdx === 0 && !item.linkUrl && !item.note">
@@ -151,6 +151,12 @@ function removeExistingCategory(idx: number) { existingCategories.value.splice(i
 function removeNewCategory(idx: number) { newCategories.value.splice(idx, 1) }
 function removeExistingItem(catIdx: number, itemIdx: number) { existingCategories.value[catIdx].items.splice(itemIdx, 1) }
 function removeNewItem(catIdx: number, itemIdx: number) { newCategories.value[catIdx].items.splice(itemIdx, 1) }
+function checkExistingAutoAdd(catIdx: number, itemIdx: number) {
+  const items = existingCategories.value[catIdx].items
+  if (itemIdx === items.length - 1 && (items[itemIdx].linkUrl || items[itemIdx].note)) {
+    items.push({ id: 0, linkUrl: '', note: '', price: 0, status: 'PENDING', sortOrder: items.length })
+  }
+}
 function checkAutoAddNew(catIdx: number, itemIdx: number) {
   const items = newCategories.value[catIdx].items
   if (itemIdx === items.length - 1 && (items[itemIdx].linkUrl || items[itemIdx].note)) {

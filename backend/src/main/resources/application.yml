@@ -33,6 +33,10 @@ spring:
         concurrency: 2
         max-concurrency: 5
 
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true

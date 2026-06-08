@@ -1,9 +1,14 @@
 <settings>
   <mirrors>
     <mirror>
-      <id>aliyun</id>
+      <id>huawei</id>
       <mirrorOf>central</mirrorOf>
-      <url>https://maven.aliyun.com/repository/public</url>
+      <url>https://repo.huaweicloud.com/repository/maven/</url>
+    </mirror>
+    <mirror>
+      <id>tencent</id>
+      <mirrorOf>*</mirrorOf>
+      <url>https://mirrors.cloud.tencent.com/nexus/repository/maven-public/</url>
     </mirror>
   </mirrors>
 </settings>
