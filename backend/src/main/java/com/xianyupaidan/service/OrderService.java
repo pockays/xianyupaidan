@@ -58,6 +58,8 @@ public class OrderService {
                         item.setCategoryId(category.getId());
                         item.setLinkUrl(itemData.getLinkUrl());
                         item.setNote(itemData.getNote());
+                        String imgs = itemData.getImageUrls();
+                        item.setImageUrls(imgs != null && !imgs.isBlank() ? imgs : null);
                         item.setPrice(BigDecimal.ZERO);
                         item.setStatus("PENDING");
                         item.setSortOrder(itemOrder++);
@@ -121,6 +123,8 @@ public class OrderService {
                         item.setCategoryId(category.getId());
                         item.setLinkUrl(itemData.getLinkUrl());
                         item.setNote(itemData.getNote());
+                        String imgs = itemData.getImageUrls();
+                        item.setImageUrls(imgs != null && !imgs.isBlank() ? imgs : null);
                         item.setPrice(BigDecimal.ZERO);
                         item.setStatus("PENDING");
                         item.setSortOrder(itemOrder++);
@@ -237,6 +241,8 @@ public class OrderService {
                         item.setCategoryId(category.getId());
                         item.setLinkUrl(itemData.getLinkUrl());
                         item.setNote(itemData.getNote());
+                        String imgs = itemData.getImageUrls();
+                        item.setImageUrls(imgs != null && !imgs.isBlank() ? imgs : null);
                         item.setPrice(BigDecimal.ZERO);
                         item.setStatus("PENDING");
                         item.setSortOrder(itemOrder++);
@@ -277,6 +283,10 @@ public class OrderService {
         }
         if (request.getStatus() != null) {
             item.setStatus(request.getStatus());
+        }
+        if (request.getImageUrls() != null) {
+            String imgs = request.getImageUrls();
+            item.setImageUrls(!imgs.isBlank() ? imgs : null);
         }
         orderItemMapper.updateById(item);
         recalculateTotal(orderId);
@@ -362,6 +372,7 @@ public class OrderService {
                 id.setId(item.getId());
                 id.setLinkUrl(item.getLinkUrl());
                 id.setNote(item.getNote());
+                id.setImageUrls(item.getImageUrls());
                 id.setPrice(item.getPrice());
                 id.setStatus(item.getStatus());
                 id.setSortOrder(item.getSortOrder());

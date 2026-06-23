@@ -17,6 +17,7 @@ public class CreateOrderRequest {
         public static class ItemData {
             private String linkUrl;
             private String note;
+            private String imageUrls;
         }
     }
 }

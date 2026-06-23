@@ -13,6 +13,7 @@ public class OrderItem {
     private Long categoryId;
     private String linkUrl;
     private String note;
+    private String imageUrls;
     private BigDecimal price;
     private String status;
     private Integer sortOrder;

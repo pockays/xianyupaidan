@@ -42,6 +42,7 @@
               <div class="item-inputs">
                 <input v-model="item.linkUrl" placeholder="输入链接" class="form-input form-input-sm" @blur="checkAutoAdd(catIdx, itemIdx)" />
                 <textarea v-model="item.note" placeholder="备注" class="form-textarea" rows="1" @input="autoResize($event)" />
+                <ImageUpload :model-value="(item as any).imageUrls || []" @update:model-value="(v: any) => (item as any).imageUrls = v" @preview="(idx: any) => previewImages((item as any).imageUrls || [], idx)" />
               </div>
               <button class="btn-icon-remove" @click="removeItem(catIdx, itemIdx)" :disabled="cat.items.length <= 1 && itemIdx === 0 && !item.linkUrl && !item.note">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -58,6 +59,7 @@
         </button>
       </div>
     </div>
+    <ImageLightbox v-model="lightboxVisible" :images="lightboxImages" :current="lightboxIndex" />
   </div>
 </template>
 
@@ -68,6 +70,8 @@ import { ElMessage } from 'element-plus'
 import { createOrder, submitOrder } from '../../api/user'
 import request from '../../api/request'
 import type { PresetTag } from '../../api/admin'
+import ImageUpload from '../../components/common/ImageUpload.vue'
+import ImageLightbox from '../../components/common/ImageLightbox.vue'
 
 const router = useRouter()
 
@@ -79,6 +83,10 @@ const categories = ref<Category[]>([])
 const presetTags = ref<PresetTag[]>([])
 const customTag = ref('')
 const submitting = ref(false)
+const lightboxVisible = ref(false)
+const lightboxImages = ref<string[]>([])
+const lightboxIndex = ref(0)
+function previewImages(imgs: string[], idx: number) { lightboxImages.value = imgs; lightboxIndex.value = idx; lightboxVisible.value = true }
 
 onMounted(async () => {
   const tid = localStorage.getItem('tenantId') || 'default'
@@ -117,7 +125,7 @@ function buildRequest() {
       .filter(c => c.items.some(i => i.linkUrl || i.note))
       .map(c => ({
         categoryName: c.categoryName,
-        items: c.items.filter(i => i.linkUrl || i.note).map(i => ({ linkUrl: i.linkUrl, note: i.note })),
+        items: c.items.filter(i => i.linkUrl || i.note).map(i => { const urls = Array.isArray((i as any).imageUrls) ? JSON.stringify((i as any).imageUrls) : ''; return { linkUrl: i.linkUrl, note: i.note, imageUrls: urls === '[]' ? '' : urls } }),
       })),
   }
 }

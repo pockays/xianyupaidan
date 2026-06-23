@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 public class UpdateItemRequest {
     private String linkUrl;
     private String note;
+    private String imageUrls;
     private BigDecimal price;
     private String status;
 }

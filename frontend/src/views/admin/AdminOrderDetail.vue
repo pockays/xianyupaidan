@@ -21,22 +21,32 @@
         <div class="meta-item"><span class="meta-label">时间</span><span class="meta-value">{{ order.createdAt?.substring(0, 16)?.replace('T', ' ') }}</span></div>
       </div>
 
-      <!-- Existing categories (read-only display) -->
-      <div v-for="cat in existingCategories" :key="cat.id || cat._key" class="category-card">
-        <div class="category-head">{{ cat.categoryName }}</div>
+      <!-- Existing categories (fully editable) -->
+      <div v-for="(cat, catIdx) in existingCategories" :key="cat.id || cat._key" class="category-card">
+        <div class="category-head">
+          <span>{{ cat.categoryName }}</span>
+          <button class="btn-icon-delete" @click="removeExistingCategory(catIdx)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
         <div class="category-body">
-          <div v-for="item in cat.items" :key="item.id || item._key" class="item-row">
+          <div v-for="(item, itemIdx) in cat.items" :key="item.id || item._key" class="item-row">
             <button class="item-check" :class="{ done: item.status === 'COMPLETED' }" @click="handleItemStatus(item)">
               <svg v-if="item.status === 'COMPLETED'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             </button>
+            <span class="item-index">{{ itemIdx + 1 }}</span>
             <div class="item-content">
-              <span class="item-link" :class="{ empty: !item.linkUrl }">{{ item.linkUrl || '(无链接)' }}</span>
-              <span class="item-note" :class="{ empty: !item.note }">{{ item.note || '(无备注)' }}</span>
+              <input v-model="item.linkUrl" placeholder="输入链接" class="form-input form-input-sm" @blur="handleItemUpdate(item); checkExistingAutoAdd(catIdx, itemIdx)" />
+              <textarea v-model="item.note" placeholder="备注" class="form-textarea" rows="1" @blur="handleItemUpdate(item)" @input="autoResize($event)" />
+              <ImageUpload :model-value="parseImages(item)" @update:model-value="(v: any) => { updateItemImages(item, v); handleItemUpdate(item) }" @preview="(idx: any) => previewImages(parseImages(item), idx)" />
             </div>
             <div class="item-price-wrap">
               <span class="price-symbol">¥</span>
               <input type="number" class="price-input" :value="item.price" min="0" step="0.01" @change="handlePriceChange(item, ($event.target as HTMLInputElement).value)" @focus="($event.target as HTMLInputElement).select()" />
             </div>
+            <button class="btn-icon-remove" @click="removeExistingItem(catIdx, itemIdx)" :disabled="cat.items.length <= 1 && itemIdx === 0 && !item.linkUrl && !item.note">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
           </div>
         </div>
       </div>
@@ -82,6 +92,7 @@
         </button>
       </div>
     </div>
+    <ImageLightbox v-model="lightboxVisible" :images="lightboxImages" :current="lightboxIndex" />
   </div>
 </template>
 
@@ -94,6 +105,9 @@ import type { OrderDetail, CategoryDetail } from '../../api/user'
 import request from '../../api/request'
 import type { PresetTag } from '../../api/admin'
 import { statusMap } from '../../utils'
+import ImageLightbox from '../../components/common/ImageLightbox.vue'
+import ImageUpload from '../../components/common/ImageUpload.vue'
+import { deleteOrderItem as deleteItemApi } from '../../api/admin'
 
 type CatWithKey = CategoryDetail & { _key?: string; items: ItemWithKey[] }
 type ItemWithKey = CategoryDetail['items'][number] & { _key?: string }
@@ -107,6 +121,11 @@ const newCategories = ref<NewCat[]>([])
 const presetTags = ref<PresetTag[]>([])
 const customTag = ref('')
 const saving = ref(false)
+const lightboxVisible = ref(false)
+const lightboxImages = ref<string[]>([])
+const lightboxIndex = ref(0)
+function parseImages(item: any): string[] { if (!item.imageUrls) return []; if (Array.isArray(item.imageUrls)) return item.imageUrls; try { return JSON.parse(item.imageUrls) } catch { return [] } }
+function previewImages(imgs: string[], idx: number) { lightboxImages.value = imgs; lightboxIndex.value = idx; lightboxVisible.value = true }
 
 const computedTotal = computed(() => {
   let t = 0; existingCategories.value.forEach(c => c.items.forEach(i => t += i.price || 0))
@@ -125,12 +144,41 @@ onMounted(async () => {
 const allCatNames = computed(() => [...existingCategories.value, ...newCategories.value].map(c => c.categoryName))
 function isTagAdded(name: string) { return allCatNames.value.includes(name) }
 function addNewCategory(name: string) {
-  if (isTagAdded(name)) return
+  // 已有分类：直接追加空项
+  const exist = existingCategories.value.find(c => c.categoryName === name)
+  if (exist) {
+    exist.items.push({ id: 0, linkUrl: '', note: '', price: 0, status: 'PENDING', sortOrder: exist.items.length })
+    return
+  }
+  // 新分类已加过就不再重复
+  if (newCategories.value.some(c => c.categoryName === name)) return
   newCategories.value.push({ _key: 'new_'+Date.now()+Math.random(), categoryName: name, items: [{ linkUrl:'', note:'' }] })
 }
 function addCustomTag() { const n = customTag.value.trim(); if (n) { addNewCategory(n); customTag.value = '' } }
 function removeNewCategory(idx: number) { newCategories.value.splice(idx, 1) }
 function removeNewItem(catIdx: number, itemIdx: number) { newCategories.value[catIdx].items.splice(itemIdx, 1) }
+async function removeExistingCategory(idx: number) {
+  const cat = existingCategories.value[idx]
+  if (!cat) return
+  for (const item of cat.items) {
+    if (item.id) try { await deleteItemApi(orderId, item.id) } catch {}
+  }
+  existingCategories.value.splice(idx, 1)
+}
+async function removeExistingItem(catIdx: number, itemIdx: number) {
+  const item = existingCategories.value[catIdx].items[itemIdx]
+  if (item.id) try { await deleteItemApi(orderId, item.id) } catch {}
+  existingCategories.value[catIdx].items.splice(itemIdx, 1)
+}
+function checkExistingAutoAdd(catIdx: number, itemIdx: number) {
+  const items = existingCategories.value[catIdx].items
+  if (itemIdx === items.length - 1 && (items[itemIdx].linkUrl || items[itemIdx].note)) {
+    items.push({ id: 0, linkUrl: '', note: '', price: 0, status: 'PENDING', sortOrder: items.length, imageUrls: [] } as any)
+  }
+}
+function autoResize(e: Event) {
+  const el = e.target as HTMLTextAreaElement; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'
+}
 function checkAutoAdd(catIdx: number, itemIdx: number) {
   const items = newCategories.value[catIdx].items
   if (itemIdx === items.length - 1 && (items[itemIdx].linkUrl || items[itemIdx].note)) {
@@ -138,6 +186,10 @@ function checkAutoAdd(catIdx: number, itemIdx: number) {
   }
 }
 
+async function handleItemUpdate(item: any) {
+  try { await updateOrderItem(orderId, item.id, { linkUrl: item.linkUrl, note: item.note, imageUrls: JSON.stringify(parseImages(item)) }) } catch {}
+}
+function updateItemImages(item: any, urls: string[]) { item.imageUrls = urls }
 async function handleItemStatus(item: any) {
   const ns = item.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED'; item.status = ns
   try { await updateOrderItem(orderId, item.id, { status: ns }) } catch { item.status = item.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED' }
@@ -196,11 +248,16 @@ async function handleAddItems() {
 .item-check { width: 28px; height: 28px; border-radius: var(--radius-sm); border: 2px solid var(--color-border); background: var(--color-surface); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition-fast); flex-shrink: 0; color: transparent; }
 .item-check:hover { border-color: var(--color-accent); }
 .item-check.done { background: var(--color-accent); border-color: var(--color-accent); color: #FFF; }
-.item-content { flex: 1; display: flex; gap: var(--space-2); min-width: 0; }
+.item-content { flex: 1; display: flex; gap: var(--space-2); min-width: 0; align-items: flex-start; flex-wrap: wrap; }
+.form-input-sm { padding: 6px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-bg); color: var(--color-foreground); font-size: var(--font-size-sm); font-family: var(--font-sans); outline: none; min-width: 100px; }
+.form-input-sm:focus { border-color: var(--color-primary); }
+.form-textarea { flex: 1; min-width: 80px; min-height: 28px; padding: 5px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-bg); color: var(--color-foreground); font-size: var(--font-size-sm); font-family: var(--font-sans); outline: none; resize: none; line-height: 1.4; field-sizing: content; }
+.form-textarea:focus { border-color: var(--color-primary); }
 .item-link { flex: 2; font-size: var(--font-size-sm); color: var(--color-primary); word-break: break-all; }
-.item-link.empty { color: var(--color-text-muted); }
 .item-note { flex: 1; font-size: var(--font-size-sm); color: var(--color-text-secondary); word-break: break-all; line-height: 1.4; }
-.item-note.empty { color: var(--color-text-muted); }
+.item-images { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.item-thumb { width: 40px; height: 40px; border-radius: var(--radius-sm); object-fit: cover; cursor: pointer; border: 1px solid var(--color-border); }
+.item-thumb:hover { border-color: var(--color-primary); }
 .item-price-wrap { display: flex; align-items: center; gap: 2px; flex-shrink: 0; background: var(--color-bg); border-radius: var(--radius-sm); padding: 2px 6px; }
 .price-symbol { font-size: var(--font-size-xs); color: var(--color-text-muted); }
 .price-input { width: 70px; text-align: right; border: none; background: transparent; font-size: var(--font-size-sm); color: var(--color-accent); font-weight: var(--font-weight-semibold); font-family: var(--font-mono); outline: none; padding: 4px 0; }

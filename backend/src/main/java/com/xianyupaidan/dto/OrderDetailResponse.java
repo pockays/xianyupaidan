@@ -30,6 +30,7 @@ public class OrderDetailResponse {
             private Long id;
             private String linkUrl;
             private String note;
+            private String imageUrls;
             private BigDecimal price;
             private String status;
             private Integer sortOrder;

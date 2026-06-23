@@ -44,6 +44,7 @@
             <div class="item-inputs">
               <input v-model="item.linkUrl" placeholder="输入链接" :disabled="isReadOnly || isCurrent" class="form-input form-input-sm" @blur="checkExistingAutoAdd(catIdx, itemIdx)" />
               <textarea v-model="item.note" placeholder="备注" :disabled="isReadOnly || isCurrent" class="form-textarea" rows="1" @input="autoResize($event)" />
+              <ImageUpload v-if="!isReadOnly && !isCurrent" :model-value="(item as any).imageUrls || []" @update:model-value="(v: any) => (item as any).imageUrls = v" @preview="(idx: any) => previewImages((item as any).imageUrls || [], idx)" />
             </div>
             <button v-if="!isReadOnly && !isCurrent" class="btn-icon-remove" @click="removeExistingItem(catIdx, itemIdx)" :disabled="cat.items.length <= 1 && itemIdx === 0 && !item.linkUrl && !item.note">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -78,6 +79,7 @@
               <div class="item-inputs">
                 <input v-model="item.linkUrl" placeholder="输入链接" class="form-input form-input-sm" @blur="checkAutoAddNew(catIdx, itemIdx)" />
                 <textarea v-model="item.note" placeholder="备注" class="form-textarea" rows="1" @input="autoResize($event)" />
+                <ImageUpload :model-value="(item as any).imageUrls || []" @update:model-value="(v: any) => (item as any).imageUrls = v" @preview="(idx: any) => previewImages((item as any).imageUrls || [], idx)" />
               </div>
               <button class="btn-icon-remove" @click="removeNewItem(catIdx, itemIdx)" :disabled="cat.items.length <= 1 && itemIdx === 0 && !item.linkUrl && !item.note">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -100,6 +102,7 @@
         </button>
       </div>
     </div>
+    <ImageLightbox v-model="lightboxVisible" :images="lightboxImages" :current="lightboxIndex" />
   </div>
 </template>
 
@@ -111,6 +114,8 @@ import { getUserOrderDetail, updateUserOrder, submitOrder, deleteUserOrder, type
 import request from '../../api/request'
 import type { PresetTag } from '../../api/admin'
 import { statusMap } from '../../utils'
+import ImageUpload from '../../components/common/ImageUpload.vue'
+import ImageLightbox from '../../components/common/ImageLightbox.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -123,6 +128,11 @@ const presetTags = ref<PresetTag[]>([])
 const customTag = ref('')
 const saving = ref(false)
 const submitting = ref(false)
+const lightboxVisible = ref(false)
+const lightboxImages = ref<string[]>([])
+const lightboxIndex = ref(0)
+function parseImgs(raw: any): string[] { if (!raw) return []; if (Array.isArray(raw)) return raw; try { return JSON.parse(raw) } catch { return [] } }
+function previewImages(imgs: string[], idx: number) { lightboxImages.value = imgs; lightboxIndex.value = idx; lightboxVisible.value = true }
 
 const isCompleted = computed(() => order.value?.status === 'COMPLETED')
 const isCurrent = computed(() => order.value?.status === 'CURRENT')
@@ -131,7 +141,7 @@ const isReadOnly = computed(() => isCompleted.value)
 onMounted(async () => {
   const data = await getUserOrderDetail(orderId)
   order.value = data
-  existingCategories.value = (data.categories || []).map(c => ({ ...c, _key: 'cat_' + c.id + '_' + Date.now() }))
+  existingCategories.value = (data.categories || []).map(c => ({ ...c, _key: 'cat_' + c.id + '_' + Date.now(), items: c.items.map(i => ({ ...i, imageUrls: parseImgs((i as any).imageUrls) })) }))
   const tid = localStorage.getItem('tenantId') || 'default'
   try { presetTags.value = await request.get('/public/tags', { params: { tenantId: tid } }) as any }
   catch {
@@ -179,7 +189,7 @@ function buildRequest(): CreateOrderData {
       .filter(c => c.items.some(i => i.linkUrl || i.note))
       .map(c => ({
         categoryName: c.categoryName,
-        items: c.items.filter(i => i.linkUrl || i.note).map(i => ({ linkUrl: i.linkUrl, note: i.note })),
+        items: c.items.filter(i => i.linkUrl || i.note).map(i => { const urls = Array.isArray((i as any).imageUrls) ? JSON.stringify((i as any).imageUrls) : ((i as any).imageUrls || ''); return { linkUrl: i.linkUrl, note: i.note, imageUrls: urls === '[]' ? '' : urls } }),
       })),
   }
 }
@@ -191,7 +201,7 @@ async function handleSave() {
     ElMessage.success('保存成功')
     const data = await getUserOrderDetail(orderId)
     order.value = data
-    existingCategories.value = (data.categories || []).map(c => ({ ...c, _key: 'cat_' + c.id + '_' + Date.now() }))
+    existingCategories.value = (data.categories || []).map(c => ({ ...c, _key: 'cat_' + c.id + '_' + Date.now(), items: c.items.map(i => ({ ...i, imageUrls: parseImgs((i as any).imageUrls) })) }))
     newCategories.value = []
     customTag.value = ''
   } finally { saving.value = false }
